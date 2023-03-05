@@ -32,16 +32,14 @@ if ! ipset list china &> /dev/null; then
 fi
 
 echo "Populating 'china' ipset..."
-#!/bin/bash
-
 # 下载国内IPv4源
 curl -sSL http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest | grep ipv4 | grep CN | awk -F\| '{printf("%s/%d\n", $4, 32-log($5)/log(2))}' > /tmp/china_ip_list_v4.txt
 
 # 创建ipset规则
-sudo ipset -N china_v4 hash:net
+sudo ipset -N china hash:net
 
 # 加载ipset规则
-sudo ipset -A china_v4 $(cat /tmp/china_ip_list_v4.txt)
+sudo ipset -A china $(cat /tmp/china_ip_list_v4.txt)
 
 # 删除临时文件
 rm /tmp/china_ip_list_v4.txt
