@@ -74,7 +74,7 @@ iptables -A INPUT -m set --match-set china src -j ACCEPT
 iptables -A INPUT -m set --match-set china src -p tcp --dport 40000:50000 -j ACCEPT
 
 # 阻止40000-50000端口的海外流量
-iptables -A INPUT -p tcp --dport 40000:50000 -m set --match-set china dst -j DROP
+iptables -A INPUT -p tcp --dport 40000:50000 -j DROP
 
 # 允许所有其他端口的海外流量
 iptables -A INPUT -p tcp -m state --state NEW -j ACCEPT
