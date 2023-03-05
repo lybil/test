@@ -38,6 +38,7 @@ echo "Populating 'china' ipset..."
 wget -O /tmp/china_ip_list_v4.txt "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/cn.cidr"
 
 # 创建ipset规则
+iptables -F
 service iptables stop 
 sudo modprobe -r ip_set_hash_ip
 ipset destroy
@@ -66,7 +67,6 @@ elif [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
 fi
 
 # 清除所有规则
-iptables -F
 
 # 允许40000-50000端口的中国IP地址流量
 iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
