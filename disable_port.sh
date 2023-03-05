@@ -12,7 +12,7 @@ else
     exit 1
 fi
 
-# 安装ipset并下载ipset的ipv4、ipv6源
+# 安装ipset并下载ipset的ipv4
 if ! command -v ipset >/dev/null 2>&1; then
     if [ "$OS" = "centos" ]; then
         yum install -y ipset
@@ -32,9 +32,22 @@ if ! ipset list china &> /dev/null; then
 fi
 
 echo "Populating 'china' ipset..."
-wget -O /etc/ipset-china/ipv4.txt "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/cn.cidr"
-wget -O /etc/ipset-china/ipv6.txt "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv6/cn.cidr"
-/usr/sbin/ipset-china-update -c /etc/ipset-china/ipv4.txt -6 /etc/ipset-china/ipv6.txt -s china -S chnroute -m 32 -M 64
+#!/bin/bash
+
+# 下载国内IPv4源
+curl -sSL http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest | grep ipv4 | grep CN | awk -F\| '{printf("%s/%d\n", $4, 32-log($5)/log(2))}' > /tmp/china_ip_list_v4.txt
+
+# 创建ipset规则
+sudo ipset -N china_v4 hash:net
+
+# 加载ipset规则
+sudo ipset -A china_v4 $(cat /tmp/china_ip_list_v4.txt)
+
+# 删除临时文件
+rm /tmp/china_ip_list_v4.txt
+
+echo "china_v4 ipset rules have been created and loaded successfully."
+
 
 # 检查iptables-persistent是否已安装，如果未安装则安装它
 if [ "$OS" = "centos" ]; then
