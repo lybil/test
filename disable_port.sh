@@ -63,11 +63,6 @@ fi
 # 清除所有规则
 iptables -F
 
-# 允许已建立的连接和本地流量
-iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-iptables -A INPUT -i lo -j ACCEPT
-
-
 # 允许40000-50000端口的中国IP地址流量
 iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
 iptables -I INPUT -m set --match-set china src -p tcp --dport 40000:50000 -j ACCEPT
