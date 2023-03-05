@@ -33,7 +33,8 @@ fi
 
 echo "Populating 'china' ipset..."
 # 下载国内IPv4源
-curl -sSL http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest | grep ipv4 | grep CN | awk -F\| '{printf("%s/%d\n", $4, 32-log($5)/log(2))}' > /tmp/china_ip_list_v4.txt
+#curl -sSL http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest | grep ipv4 | grep CN | awk -F\| '{printf("%s/%d\n", $4, 32-log($5)/log(2))}' > /tmp/china_ip_list_v4.txt
+curl -sSL https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt | sed 's/\r$//' | grep -v '^#' | sort -u > /tmp/china_ip_list_v4.txt
 
 # 创建ipset规则
 sudo ipset -N china hash:net
