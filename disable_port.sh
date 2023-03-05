@@ -84,6 +84,7 @@ iptables -A INPUT -j DROP
 
 # 保存iptables规则
 if [ "$OS" = "centos" ]; then
+    yum install iptables-services
     service iptables save
 elif [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
     iptables-save > /etc/iptables/rules.v4
