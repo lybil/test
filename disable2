@@ -22,7 +22,7 @@ if [[ $(command -v iptables-persistent) == "" ]]; then
         sudo apt-get install -y iptables-persistent
     elif [[ $(command -v yum) != "" ]]; then
         sudo yum update
-        sudo yum install -y iptables-persistent
+        sudo yum install -y iptables-services
     else
         echo "Could not find a package manager to install IPtables-persistent. Aborting."
         exit 1
