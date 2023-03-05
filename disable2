@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# Check if IPset and IPtables-persistent are installed, if not install them
+if [[ $(command -v ipset) == "" ]]; then
+    echo "Installing IPset..."
+    if [[ $(command -v apt-get) != "" ]]; then
+        sudo apt-get update
+        sudo apt-get install -y ipset
+    elif [[ $(command -v yum) != "" ]]; then
+        sudo yum update
+        sudo yum install -y ipset
+    else
+        echo "Could not find a package manager to install IPset. Aborting."
+        exit 1
+    fi
+fi
+
+if [[ $(command -v iptables-persistent) == "" ]]; then
+    echo "Installing IPtables-persistent..."
+    if [[ $(command -v apt-get) != "" ]]; then
+        sudo apt-get update
+        sudo apt-get install -y iptables-persistent
+    elif [[ $(command -v yum) != "" ]]; then
+        sudo yum update
+        sudo yum install -y iptables-persistent
+    else
+        echo "Could not find a package manager to install IPtables-persistent. Aborting."
+        exit 1
+    fi
+fi
+
+# Install IPset-china
+if [[ $(command -v ipset) != "" ]]; then
+    if [[ ! -f /usr/sbin/ipset-china ]]; then
+        echo "Installing IPset-china..."
+        wget https://github.com/koonlekom/ipset-china/archive/master.zip
+        unzip master.zip
+        cd ipset-china-master/
+        sudo ./install.sh
+    fi
+fi
+
+# Configure IPset-china
+if [[ $(command -v ipset) != "" && -f /usr/sbin/ipset-china ]]; then
+    echo "Configuring IPset-china..."
+    sudo /usr/sbin/ipset-china-update -c /etc/ipset-china/ipv4.txt -6 /etc/ipset-china/ipv6.txt -s china -S chnroute -m 32 -M 64
+else
+    echo "IPset-china is not installed, skipping IPset-china configuration."
+fi
+
+# Configure IPtables rules
+echo "Configuring IPtables rules..."
+sudo iptables -A INPUT -p tcp --dport 40000:50000 -m set --match-set china dst -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 40000:50000 -j DROP
+
+# Save IPtables rules
+echo "Saving IPtables rules..."
+if [[ $(command -v iptables-save) != "" ]]; then
+    sudo iptables-save > /etc/iptables/rules.v4
+    sudo ip6tables-save > /etc/iptables/rules.v6
+elif [[ $(command -v netfilter-persistent) != "" ]]; then
+    sudo netfilter-persistent save
+else
+    echo "Could not find a suitable command to save IPtables rules. Aborting."
+    exit 1
+fi
+
+echo "Done!"
