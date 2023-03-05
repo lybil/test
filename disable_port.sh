@@ -33,10 +33,15 @@ fi
 
 echo "Populating 'china' ipset..."
 # 下载国内IPv4源
-#curl -sSL http://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest | grep ipv4 | grep CN | awk -F\| '{printf("%s/%d\n", $4, 32-log($5)/log(2))}' > /tmp/china_ip_list_v4.txt
-curl -sSL https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt | sed 's/\r$//' | grep -v '^#' | sort -u > /tmp/china_ip_list_v4.txt
+# ipip 
+#curl -sSL https://raw.githubusercontent.com/17mon/china_ip_list/master/china_ip_list.txt | sed 's/\r$//' | grep -v '^#' | sort -u > /tmp/china_ip_list_v4.txt
+wget -O /tmp/china_ip_list_v4.txt "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/cn.cidr"
 
 # 创建ipset规则
+service iptables stop 
+sudo modprobe -r ip_set_hash_ip
+ipset destroy
+
 sudo ipset -N china hash:net
 
 # 加载ipset规则
@@ -70,7 +75,7 @@ iptables -I INPUT -m set --match-set china src -p tcp --dport 40000:50000 -j ACC
 
 # 保存iptables规则
 if [ "$OS" = "centos" ]; then
-    yum install iptables-services
+    yum install -y iptables-services
     service iptables save
 elif [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
     iptables-save > /etc/iptables/rules.v4
