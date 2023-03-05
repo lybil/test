@@ -67,20 +67,11 @@ iptables -F
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A INPUT -i lo -j ACCEPT
 
-# 允许所有端口的中国IP地址流量
-iptables -A INPUT -m set --match-set china src -j ACCEPT
 
 # 允许40000-50000端口的中国IP地址流量
-iptables -A INPUT -m set --match-set china src -p tcp --dport 40000:50000 -j ACCEPT
+iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
+iptables -I INPUT -m set --match-set china src -p tcp --dport 40000:50000 -j ACCEPT
 
-# 阻止40000-50000端口的海外流量
-iptables -A INPUT -p tcp --dport 40000:50000 -j DROP
-
-# 允许所有其他端口的海外流量
-iptables -A INPUT -p tcp -m state --state NEW -j ACCEPT
-
-# 阻止所有其他流量
-iptables -A INPUT -j DROP
 
 # 保存iptables规则
 if [ "$OS" = "centos" ]; then
