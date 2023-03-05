@@ -19,14 +19,22 @@ if ! command -v ipset >/dev/null 2>&1; then
     elif [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
         apt-get update
         apt-get install -y ipset
+    else
+        echo "Error: Unable to install ipset-china. Please install it manually and try again."
+        exit 1
     fi
 fi
-if [ ! -f "/etc/ipset/china.ipset" ]; then
-    curl -o /etc/ipset/china.ipset https://ipverse.netlify.app/ipsets/china.ipset
+
+# Create and populate the "china" ipset
+if ! ipset list china &> /dev/null; then
+    echo "Creating 'china' ipset..."
+    ipset create china hash:net
 fi
-if [ ! -f "/etc/ipset/china6.ipset" ]; then
-    curl -o /etc/ipset/china6.ipset https://ipverse.netlify.app/ipsets/china6.ipset
-fi
+
+echo "Populating 'china' ipset..."
+wget -O /etc/ipset-china/ipv4.txt "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv4/cn.cidr"
+wget -O /etc/ipset-china/ipv6.txt "https://raw.githubusercontent.com/herrbischoff/country-ip-blocks/master/ipv6/cn.cidr"
+/usr/sbin/ipset-china-update -c /etc/ipset-china/ipv4.txt -6 /etc/ipset-china/ipv6.txt -s china -S chnroute -m 32 -M 64
 
 # 检查iptables-persistent是否已安装，如果未安装则安装它
 if [ "$OS" = "centos" ]; then
