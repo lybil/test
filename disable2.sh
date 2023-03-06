@@ -31,7 +31,8 @@ if [[ $(lsb_release -si) == "CentOS" ]]; then
     sudo yum install -y iptables-persistent
     sudo systemctl start iptables
     sudo systemctl enable iptables  
-    
+fi
+
 #elif [[ $(lsb_release -si) == "Ubuntu" ]]; then
 #    sudo service iptables save
 #elif [[ $(lsb_release -si) == "Debian" ]]; then
@@ -39,7 +40,6 @@ if [[ $(lsb_release -si) == "CentOS" ]]; then
 #        sudo apt-get update
 #        sudo apt-get install -y iptables-persistent
     
-fi
 
 # Create an ipset called "china"
 sudo iptables -F
