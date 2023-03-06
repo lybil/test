@@ -38,6 +38,15 @@ cat delegated-apnic-latest.txt | grep '|CN|ipv4|' | awk -F\| '{ printf("%s/%d\n"
 sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
 
 # Save the iptables rules
-sudo service iptables save
+if [[ $(lsb_release -si) == "Ubuntu" ]]; then
+    sudo iptables-save > /etc/iptables/rules.v4
+elif [[ $(lsb_release -si) == "CentOS" ]]; then
+    sudo service iptables save
+elif [[ $(lsb_release -si) == "Debian" ]]; then
+    sudo iptables-save > /etc/iptables/rules.v4
+else
+    echo "Unsupported distribution."
+    exit 1
+fi
 
 echo "Done."
