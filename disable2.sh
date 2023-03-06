@@ -25,10 +25,25 @@ then
 fi
 
 # Check if iptables-services is installed, if not, install it
-if ! rpm -q iptables-services &> /dev/null
-then
+
     echo "iptables-services not found, installing..."
     sudo yum install iptables-services -y
+fi
+
+# iptables持久化
+if [[ $(lsb_release -si) == "CentOS" ]]; then
+    sudo yum install iptables-services -y
+    sudo yum install -y iptables-persistent
+    sudo systemctl start iptables
+    sudo systemctl enable iptables  
+    
+#elif [[ $(lsb_release -si) == "Ubuntu" ]]; then
+#    sudo service iptables save
+#elif [[ $(lsb_release -si) == "Debian" ]]; then
+#    sudo iptables-save > /etc/iptables/rules.v4
+#        sudo apt-get update
+#        sudo apt-get install -y iptables-persistent
+    
 fi
 
 # Create an ipset called "china"
@@ -54,12 +69,15 @@ if [[ $(lsb_release -si) == "Ubuntu" ]]; then
     sudo iptables-save > /etc/iptables/rules.v4
 elif [[ $(lsb_release -si) == "CentOS" ]]; then
     sudo service iptables save
+    sudo iptables-save | sudo tee /etc/sysconfig/iptables
 elif [[ $(lsb_release -si) == "Debian" ]]; then
     sudo iptables-save > /etc/iptables/rules.v4
 else
     echo "Unsupported distribution."
     exit 1
 fi
+
+
 # 删除临时文件
 rm /root/delegated-apnic-latest.txt
 
