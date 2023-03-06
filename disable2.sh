@@ -43,8 +43,7 @@ wget https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest -O /root/del
 # Add China's IP ranges to the "china" ipset
 cat /root/delegated-apnic-latest.txt | grep '|CN|ipv4|' | awk -F\| '{ printf("%s/%d\n", $4, 32-log($5)/log(2)) }' | sudo xargs -I{} ipset add china {}
 
-# 删除临时文件
-rm /root/delegated-apnic-latest.txt
+
 
 # Allow Chinese IP addresses to access ports 40000-50000, and deny others
 
@@ -61,5 +60,7 @@ else
     echo "Unsupported distribution."
     exit 1
 fi
+# 删除临时文件
+rm /root/delegated-apnic-latest.txt
 
 echo "Done."
