@@ -29,7 +29,7 @@ fi
 if [[ $(lsb_release -si) == "CentOS" ]]; then
     sudo yum install iptables-services -y
     sudo yum install -y iptables-persistent
-    sudo systemctl start iptables
+#    sudo systemctl start iptables
     sudo systemctl enable iptables  
 fi
 
@@ -64,7 +64,7 @@ if [[ $(lsb_release -si) == "Ubuntu" ]]; then
     sudo iptables-save > /etc/iptables/rules.v4
 elif [[ $(lsb_release -si) == "CentOS" ]]; then
     sudo service iptables save
-    sudo iptables-save | sudo tee /etc/sysconfig/iptables
+#    sudo iptables-save | sudo tee /etc/sysconfig/iptables
 elif [[ $(lsb_release -si) == "Debian" ]]; then
     sudo iptables-save > /etc/iptables/rules.v4
 else
