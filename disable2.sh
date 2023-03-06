@@ -35,6 +35,9 @@ wget https://ftp.apnic.net/apnic/stats/apnic/delegated-apnic-latest -O delegated
 cat delegated-apnic-latest.txt | grep '|CN|ipv4|' | awk -F\| '{ printf("%s/%d\n", $4, 32-log($5)/log(2)) }' | sudo xargs -I{} ipset add china {}
 
 # Allow Chinese IP addresses to access ports 40000-50000, and deny others
+sudo iptables -F
+sudo ipset destroy
+
 sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
 
 # Save the iptables rules
