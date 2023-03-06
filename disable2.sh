@@ -24,11 +24,6 @@ then
     fi
 fi
 
-# Check if iptables-services is installed, if not, install it
-
-    echo "iptables-services not found, installing..."
-    sudo yum install iptables-services -y
-fi
 
 # iptables持久化
 if [[ $(lsb_release -si) == "CentOS" ]]; then
