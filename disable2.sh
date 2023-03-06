@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check if redhat-lsb-core is installed, if not, install it
+if ! rpm -q iredhat-lsb-core &> /dev/null
+then
+    echo "redhat-lsb-core not found, installing..."
+    sudo yum install redhat-lsb-core -y
+fi
 # Check if ipset is installed, if not, install it
 if ! command -v ipset &> /dev/null
 then
@@ -36,7 +42,7 @@ cat delegated-apnic-latest.txt | grep '|CN|ipv4|' | awk -F\| '{ printf("%s/%d\n"
 
 # Allow Chinese IP addresses to access ports 40000-50000, and deny others
 sudo iptables -F
-sudo ipset destroy
+sudo ipset destroy 
 
 sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
 
