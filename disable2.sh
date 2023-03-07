@@ -42,7 +42,8 @@ fi
     
 
 # Create an ipset called "china"
-sudo iptables -F
+#sudo iptables -F
+sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
 sudo ipset destroy 
 
 sudo ipset create china hash:net
