@@ -1,5 +1,5 @@
 #!/bin/bash
-read -p "Enter the port range you want to allow for China (format: start-end): " PORT_RANGE
+#read -p "Enter the port range you want to allow for China (format: start-end): " PORT_RANGE
 
 # Check if redhat-lsb-core is installed, if not, install it
 if ! rpm -q iredhat-lsb-core &> /dev/null
@@ -41,6 +41,17 @@ fi
 #        sudo apt-get update
 #        sudo apt-get install -y iptables-persistent
     
+#输入端口
+echo -n "Please enter the port range you want to allow Chinese IP addresses to access (e.g. 40000:50000), press enter for default (40000:50000): "
+read port_range
+
+# Use default port range if no input within 10 seconds
+if [ -z "$port_range" ]; then
+    echo "No input, using default port range (40000:50000)."
+    port_range="40000:50000"
+else
+    echo "Port range set to: $port_range"
+fi
 
 # Create an ipset called "china"
 #sudo iptables -F
