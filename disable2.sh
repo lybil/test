@@ -43,7 +43,7 @@ fi
     
 #输入端口
 echo -n "Please enter the port range you want to allow Chinese IP addresses to access (e.g. 40000:50000), press enter for default (40000:50000): "
-read port_range
+read -t 10 port_range
 
 # Use default port range if no input within 10 seconds
 if [ -z "$port_range" ]; then
