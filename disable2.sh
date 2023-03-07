@@ -1,4 +1,5 @@
 #!/bin/bash
+read -p "Enter the port range you want to allow for China (format: start-end): " PORT_RANGE
 
 # Check if redhat-lsb-core is installed, if not, install it
 if ! rpm -q iredhat-lsb-core &> /dev/null
@@ -43,7 +44,7 @@ fi
 
 # Create an ipset called "china"
 #sudo iptables -F
-sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
+sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport $PORT_RANGE -j DROP
 sudo ipset destroy 
 
 sudo ipset create china hash:net
@@ -58,7 +59,7 @@ cat /root/delegated-apnic-latest.txt | grep '|CN|ipv4|' | awk -F\| '{ printf("%s
 
 # Allow Chinese IP addresses to access ports 40000-50000, and deny others
 
-sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
+sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport $PORT_RANGE -j DROP
 
 # Save the iptables rules
 if [[ $(lsb_release -si) == "Ubuntu" ]]; then
