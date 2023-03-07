@@ -28,7 +28,7 @@ fi
 # iptables持久化
 if [[ $(lsb_release -si) == "CentOS" ]]; then
     sudo yum install iptables-services -y
-    sudo yum install -y iptables-persistent
+#    sudo yum install -y iptables-persistent
 #    sudo systemctl start iptables
     sudo systemctl enable iptables  
 fi
