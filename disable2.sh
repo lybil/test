@@ -48,14 +48,14 @@ read port_range
 # Use default port range if no input within 10 seconds
 if [ -z "$port_range" ]; then
     echo "No input, using default port range (40000:50000)."
-    port_range="40000:50000"
+    port_range=40000:50000
 else
     echo "Port range set to: $port_range"
 fi
 
 # Create an ipset called "china"
 #sudo iptables -F
-sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport "$port_range" -j DROP
+sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport $port_range -j DROP
 sudo ipset destroy 
 
 sudo ipset create china hash:net
@@ -70,7 +70,7 @@ cat /root/delegated-apnic-latest.txt | grep '|CN|ipv4|' | awk -F\| '{ printf("%s
 
 # Allow Chinese IP addresses to access ports 40000-50000, and deny others
 
-sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport "$port_range" -j DROP
+sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport $port_range -j DROP
 
 #sudo iptables -I INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
 
