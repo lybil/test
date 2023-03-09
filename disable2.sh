@@ -47,8 +47,8 @@ read -t 10 port_range
 
 # Use default port range if no input within 10 seconds
 if [ -z $port_range ]; then
-    echo "No input, using default port range (40000:50000)."
-    port_range=40000:50000
+    echo "No input, using default port range (40000:40100)."
+    port_range=40000:40100
 else
     echo "Port range set to: $port_range"
 fi
