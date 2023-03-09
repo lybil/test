@@ -42,7 +42,7 @@ fi
 #        sudo apt-get install -y iptables-persistent
     
 #输入端口
-echo -n "Please enter the port range you want to allow Chinese IP addresses to access (e.g. 40000:50000), press enter for default (40000:50000): "
+echo -n "Please enter the port range you want to allow Chinese IP addresses to access (e.g. 40000:40100), press enter for default (40000:40100): "
 read -t 10 port_range
 
 # Use default port range if no input within 10 seconds
@@ -56,6 +56,8 @@ fi
 # Create an ipset called "china"
 #sudo iptables -F
 sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport $port_range -j DROP
+sudo iptables -D INPUT -m set ! --match-set china src -p tcp --dport 40000:50000 -j DROP
+
 sudo ipset destroy 
 
 sudo ipset create china hash:net
