@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IMG_URL="https://down.idc.wiki/Image/Mikrotik/chr-6.48.6.img"
+IMG_URL="https://down.idc.wiki/Image/Mikrotik/chr-7.4.img"
 IMG_FILE=$(mktemp)
 ROOT_DISK=`df -h / | tail -n 1  | awk '{print $1}' | sed 's/\([0-9]\+\)//g'`
 
