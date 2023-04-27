@@ -1,0 +1,89 @@
+#!/bin/bash
+#download ros-6.48.6
+yum install -y wget gzip
+#wget https://download.mikrotik.com/routeros/6.48.6/chr-6.48.6.img.zip -O chr.img.zip
+wget https://download.mikrotik.com/routeros/7.8/chr-7.8.img.zip -O chr.img.zip
+gunzip -c chr.img.zip > chr.img
+if [ ! -e ./chr.img ]; then
+  echo "Error on get image file!"
+  exit 1
+fi
+
+#ip addr and default route
+ADDRESS=`ip addr show eth0 | grep global | cut -d' ' -f 6 | head -n 1`
+echo "IP address is $ADDRESS"
+GATEWAY=`ip route list | grep default | cut -d' ' -f 3`
+echo "Gateway is $GATEWAY"
+
+read -r -p "Image file, ip and route are correct? [Y/n]:" input
+case $input in
+  [yY][eE][sS]|[yY])  ;;
+  *) echo "Exit for wrong img file, ip or route!"; exit 1;;
+esac
+
+#setup init script
+mount -o loop,offset=512 chr.img /mnt
+if [ $? -ne 0 ]; then
+	echo "Mount failed!"
+	exit 1
+fi
+
+echo "Writing to autorun.scr"
+#ros login password
+PASSWORD=""
+#ros ssh port
+SSHPORT=22
+#ros winlogon port
+WINBOXPORT=8291
+#ros dns server
+DNSSVR="1.1.1.1,1.0.0.1"
+#ros license account and password
+ROSACCOUNT=""
+ROSPASSWD=""
+cat > /mnt/rw/autorun.scr <<EOF
+#password
+/user set 0 name=admin password=$PASSWORD
+#config ip and route
+/ip dhcp-client disable [find where interface=ether1]
+/ip address add address=$ADDRESS interface=[/interface ethernet find where name=ether1]
+/ip route add gateway=$GATEWAY
+#enhance security
+/ip service disable telnet,ftp,www,api,api-ssl
+/ip service set ssh port=$SSHPORT
+/ip service set winbox port=$WINBOXPORT
+/tool mac-server set allowed-interface-list=none
+/ip neighbor discovery-settings set discover-interface-list=none
+#config dns
+/ip dns set servers=$DNSSVR
+#renew license
+/delay 3s
+/system license renew account=$ROSACCOUNT password=$ROSPASSWD level=p-unlimited
+#upgrade
+/system package update set channel=upgrade
+/system package update check-for-updates once
+:delay 3s;
+:if ( [/system package update get status] = "New version is available") do={ /system package update install }
+EOF
+
+sync && sleep 1s
+umount /mnt
+if [ $? -ne 0 ]; then
+	echo "Umount failed!"
+	exit 1
+fi
+
+#dd and reboot
+read -r -p "Partition is /dev/sda ? [Y/n]:" input
+case $input in
+  [yY][eE][sS]|[yY])  ;;
+  *) echo "Need to modify partition name!"; exit 1;;
+esac
+
+echo "dd starting"
+sync && sleep 1s
+echo u > /proc/sysrq-trigger
+#fdisk -l | grep da check partition name
+dd if=chr.img bs=1M of=/dev/sda
+sync && sleep 1s
+echo "rebooting" && sleep 1s
+echo b > /proc/sysrq-trigger
