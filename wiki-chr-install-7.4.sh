@@ -48,21 +48,33 @@ setup_loop
 rm -rf /tmp/chr >/dev/null 2>&1
 mkdir /tmp/chr
 
-losetup /dev/loop0 $IMG_FILE
+# losetup /dev/loop0 $IMG_FILE
+# if [ $? -ne 0 ]
+# then
+#     echo "Failed to mount image file"
+#     exit 1
+# fi
+
+LOOP_DEVICE=$(losetup -f --show $IMG_FILE)
 if [ $? -ne 0 ]
 then
-    echo "Failed to mount image file"
+    echo "Failed to setup loop device"
     exit 1
 fi
 
-partprobe /dev/loop0
-mount /dev/loop0p1 /tmp/chr
+partprobe $LOOP_DEVICE
+mount ${LOOP_DEVICE}p1 /tmp/chr
+
+# partprobe /dev/loop0
+# mount /dev/loop0p1 /tmp/chr
 
 echo "/ip address add address=$ADDRESS interface=[/interface ethernet find where mac-address=$MACADDRESS]" > /tmp/chr/autorun.scr
 echo "/ip route add gateway=$GATEWAY" >> /tmp/chr/autorun.scr
 
 umount /tmp/chr
-losetup -d /dev/loop0
+# losetup -d /dev/loop0
+losetup -d $LOOP_DEVICE
+
 
 echo u > /proc/sysrq-trigger
 dd if=$IMG_FILE of=$ROOT_DISK
