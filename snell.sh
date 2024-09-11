@@ -1,18 +1,16 @@
 #!/bin/bash
 
-# 默认端口和随机生成的PSK
+# 默认端口
 DEFAULT_PORT=11807
-DEFAULT_PSK=$(openssl rand -base64 32)
 
 # 初始化端口和PSK变量
 PORT=$DEFAULT_PORT
-PSK=$DEFAULT_PSK
 
 # 使用getopts解析命令行参数
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-        -port)
+        -p)
         PORT="$2"
         shift # 移动到下一个参数值
         shift # 移动到下一个参数
@@ -27,6 +25,11 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
 done
+
+# 如果未提供PSK，则生成一个只包含字母的随机PSK
+if [ -z "$PSK" ]; then
+    PSK=$(openssl rand -base64 32 | tr -dc 'a-zA-Z')
+fi
 
 # 更新APT包列表并安装必要的软件包
 sudo apt update && sudo apt install -y wget unzip vim openssl
@@ -96,6 +99,4 @@ EOF'
 # 输出提示信息，而不是执行命令
 echo "请执行以下命令以完成Snell服务的配置："
 echo "sudo systemctl daemon-reload"
-echo "sudo systemctl enable snell"
-echo "sudo systemctl start snell"
-echo "sudo systemctl status snell"
+echo "sudo systemctl
