@@ -12,7 +12,7 @@ PSK=$DEFAULT_PSK
 while [[ $# -gt 0 ]]; do
     key="$1"
     case $key in
-        -p)
+        -port)
         PORT="$2"
         shift # 移动到下一个参数值
         shift # 移动到下一个参数
