@@ -1,5 +1,33 @@
 #!/bin/bash
 
+# 默认端口和随机生成的PSK
+DEFAULT_PORT=11807
+DEFAULT_PSK=$(openssl rand -base64 32)
+
+# 初始化端口和PSK变量
+PORT=$DEFAULT_PORT
+PSK=$DEFAULT_PSK
+
+# 使用getopts解析命令行参数
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+        -p)
+        PORT="$2"
+        shift # 移动到下一个参数值
+        shift # 移动到下一个参数
+        ;;
+        -passwd)
+        PSK="$2"
+        shift
+        shift
+        ;;
+        *)
+        shift
+        ;;
+    esac
+done
+
 # 更新APT包列表并安装必要的软件包
 sudo apt update && sudo apt install -y wget unzip vim openssl
 
@@ -29,19 +57,20 @@ fi
 # 赋予服务器可执行权限
 sudo chmod +x /usr/local/bin/snell-server
 
-# 生成随机PSK
-PSK=$(openssl rand -base64 32)
-
 # 创建并输出Snell Server配置文件
 sudo bash -c "cat << EOF > /etc/snell/snell-server.conf
 [snell-server]
-listen = 0.0.0.0:11807
+listen = 0.0.0.0:$PORT
 psk = $PSK
 ipv6 = false
 EOF"
 
 echo "Snell Server配置文件内容："
 cat /etc/snell/snell-server.conf
+
+# 输出PSK和端口
+echo "使用的端口: $PORT"
+echo "使用的PSK: $PSK"
 
 # 创建Systemd服务文件
 sudo bash -c 'cat << EOF > /lib/systemd/system/snell.service
@@ -63,9 +92,6 @@ SyslogIdentifier=snell-server
 [Install]
 WantedBy=multi-user.target
 EOF'
-
-sudo systemctl enable snell
-sudo systemctl start snell
 
 # 输出提示信息，而不是执行命令
 echo "请执行以下命令以完成Snell服务的配置："
