@@ -7,6 +7,7 @@ domain=""
 sub_domain=""
 ip_version="4"  # 默认使用IPv4
 
+apt-get update && apt-get install -y jq
 # 帮助信息
 show_help() {
     echo "用法: $0 [选项]"
