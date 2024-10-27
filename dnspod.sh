@@ -88,22 +88,6 @@ get_current_ip() {
 # 获取记录列表
 get_record_list() {
     local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}"
-    curl -s -X POST "${api}/Record.List" -d "${data}"
-}
-
-# 更新记录
-update_record() {
-    local record_id="$1"
-    local ip="$2"
-    local record_type="A"
-    [ "$ip_version" = "6" ] && record_type="AAAA"
-    
-    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}&record_id=${record_id}&record_type=${record_type}&record_line=默认&record_line_id=0&value=${ip}"
-    curl -s -X POST "${api}/Record.Modify" -d "${data}"
-}
-# 获取记录列表
-get_record_list() {
-    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}"
     local response=$(curl -s -X POST "${api}/Record.List" -d "${data}")
     echo "${response}"
 }
