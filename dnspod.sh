@@ -101,6 +101,25 @@ update_record() {
     local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}&record_id=${record_id}&record_type=${record_type}&record_line=默认&record_line_id=0&value=${ip}"
     curl -s -X POST "${api}/Record.Modify" -d "${data}"
 }
+# 获取记录列表
+get_record_list() {
+    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}"
+    local response=$(curl -s -X POST "${api}/Record.List" -d "${data}")
+    echo "${response}"
+}
+
+# 新增：解析JSON的函数
+parse_record_id() {
+    local response="$1"
+    # 使用更精确的方式解析JSON
+    if command -v jq >/dev/null 2>&1; then
+        # 如果系统安装了jq，使用jq解析
+        echo "$response" | jq -r '.records[0].id // empty'
+    else
+        # 如果没有jq，使用grep但更精确的匹配
+        echo "$response" | grep -o '"records":\[{[^}]*"id":"[0-9]*"' | grep -o '"id":"[0-9]*"' | cut -d'"' -f4
+    fi
+}
 
 # 主程序
 main() {
@@ -110,12 +129,15 @@ main() {
 
     # 获取域名记录
     record_info=$(get_record_list)
+    log "API返回信息: ${record_info}"  # 添加调试信息
     
-    # 解析记录ID
-    record_id=$(echo "${record_info}" | grep -o '"id":"[0-9]*"' | grep -o '[0-9]*' | head -1)
+    # 使用新的解析函数获取记录ID
+    record_id=$(parse_record_id "${record_info}")
     
     if [ -z "${record_id}" ]; then
-        log "未找到域名记录"
+        log "未找到域名记录，尝试创建新记录"
+        # 这里可以添加创建记录的逻辑
+        create_record
         exit 1
     fi
     
@@ -129,7 +151,16 @@ main() {
         log "域名记录更新成功"
     else
         log "域名记录更新失败: ${update_result}"
+        # 输出完整的错误信息
+        log "错误详情: $(echo ${update_result} | grep -o '"message":"[^"]*"')"
     fi
+}
+
+# 新增：创建记录的函数
+create_record() {
+    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}&record_type=A&record_line=默认&value=${current_ip}"
+    local create_result=$(curl -s -X POST "${api}/Record.Create" -d "${data}")
+    log "创建记录结果: ${create_result}"
 }
 
 # 执行主程序
