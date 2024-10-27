@@ -84,24 +84,58 @@ get_current_ip() {
         curl -s http://ipv6.icanhazip.com
     fi
 }
-
-# 获取记录列表
-get_record_list() {
+# 获取记录列表并直接创建或更新记录
+get_and_handle_record() {
     local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}"
     local response=$(curl -s -X POST "${api}/Record.List" -d "${data}")
-    echo "${response}"
+    
+    # 输出完整的API响应以便调试
+    log "API返回数据: ${response}"
+    
+    # 使用jq解析记录ID
+    local record_id=$(echo "${response}" | jq -r '.records[0].id // empty')
+    
+    if [ -z "${record_id}" ] || [ "${record_id}" = "null" ]; then
+        # 如果没有找到记录，创建新记录
+        create_record
+    else
+        # 如果找到记录，更新现有记录
+        update_existing_record "${record_id}"
+    fi
 }
 
-# 新增：解析JSON的函数
-parse_record_id() {
-    local response="$1"
-    # 使用更精确的方式解析JSON
-    if command -v jq >/dev/null 2>&1; then
-        # 如果系统安装了jq，使用jq解析
-        echo "$response" | jq -r '.records[0].id // empty'
+# 创建新记录
+create_record() {
+    local record_type="A"
+    [ "$ip_version" = "6" ] && record_type="AAAA"
+    
+    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}&record_type=${record_type}&record_line=默认&value=${current_ip}"
+    local create_result=$(curl -s -X POST "${api}/Record.Create" -d "${data}")
+    
+    log "创建记录结果: ${create_result}"
+    
+    if echo "${create_result}" | jq -r '.status.code' | grep -q "1"; then
+        log "记录创建成功"
     else
-        # 如果没有jq，使用grep但更精确的匹配
-        echo "$response" | grep -o '"records":\[{[^}]*"id":"[0-9]*"' | grep -o '"id":"[0-9]*"' | cut -d'"' -f4
+        local error_msg=$(echo "${create_result}" | jq -r '.status.message')
+        log "记录创建失败: ${error_msg}"
+    fi
+}
+
+# 更新现有记录
+update_existing_record() {
+    local record_id="$1"
+    local record_type="A"
+    [ "$ip_version" = "6" ] && record_type="AAAA"
+    
+    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}&record_id=${record_id}&record_type=${record_type}&record_line=默认&value=${current_ip}"
+    local update_result=$(curl -s -X POST "${api}/Record.Modify" -d "${data}")
+    
+    if echo "${update_result}" | jq -r '.status.code' | grep -q "1"; then
+        log "记录更新成功"
+    else
+        local error_msg=$(echo "${update_result}" | jq -r '.status.message')
+        log "记录更新失败: ${error_msg}"
     fi
 }
 
@@ -110,41 +144,9 @@ main() {
     # 获取当前IP
     current_ip=$(get_current_ip)
     log "当前IP: ${current_ip}"
-
-    # 获取域名记录
-    record_info=$(get_record_list)
-    log "API返回信息: ${record_info}"  # 添加调试信息
     
-    # 使用新的解析函数获取记录ID
-    record_id=$(parse_record_id "${record_info}")
-    
-    if [ -z "${record_id}" ]; then
-        log "未找到域名记录，尝试创建新记录"
-        # 这里可以添加创建记录的逻辑
-        create_record
-        exit 1
-    fi
-    
-    log "域名记录ID: ${record_id}"
-
-    # 更新记录
-    update_result=$(update_record "${record_id}" "${current_ip}")
-    
-    # 检查更新结果
-    if echo "${update_result}" | grep -q '"code":"1"'; then
-        log "域名记录更新成功"
-    else
-        log "域名记录更新失败: ${update_result}"
-        # 输出完整的错误信息
-        log "错误详情: $(echo ${update_result} | grep -o '"message":"[^"]*"')"
-    fi
-}
-
-# 新增：创建记录的函数
-create_record() {
-    local data="login_token=${ID},${Token}&format=json&domain=${domain}&sub_domain=${sub_domain}&record_type=A&record_line=默认&value=${current_ip}"
-    local create_result=$(curl -s -X POST "${api}/Record.Create" -d "${data}")
-    log "创建记录结果: ${create_result}"
+    # 处理记录
+    get_and_handle_record
 }
 
 # 执行主程序
