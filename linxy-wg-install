@@ -1355,7 +1355,7 @@ if [[ ! -e "$WG_CONF" ]]; then
 	show_start_setup
 	install_pkgs
 	create_server_config
-	update_sysctl
+	# update_sysctl # 移除加速规则
 	create_firewall_rules
 	if [ "$os" != "openSUSE" ]; then
 		update_rclocal
