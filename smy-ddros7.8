@@ -1,15 +1,18 @@
 #!/bin/bash
-#download ros-6.48.6
-yum install -y wget gzip
-#wget https://download.mikrotik.com/routeros/6.48.6/chr-6.48.6.img.zip -O chr.img.zip
+
+# 安装依赖包（适用于 Debian/Ubuntu）
+apt update && apt install -y wget util-linux parted kpartx
+
+# 下载 CHR 镜像
 wget https://download.mikrotik.com/routeros/7.8/chr-7.8.img.zip -O chr.img.zip
-gunzip -c chr.img.zip > chr.img
+unzip chr.img.zip -d .  # 假设 zip 文件解压后为 chr.img
+
 if [ ! -e ./chr.img ]; then
   echo "Error on get image file!"
   exit 1
 fi
 
-#ip addr and default route
+# 获取 IP 地址和网关
 ADDRESS=`ip addr show eth0 | grep global | cut -d' ' -f 6 | head -n 1`
 echo "IP address is $ADDRESS"
 GATEWAY=`ip route list | grep default | cut -d' ' -f 3`
@@ -21,44 +24,66 @@ case $input in
   *) echo "Exit for wrong img file, ip or route!"; exit 1;;
 esac
 
-#setup init script
-mount -o loop,offset=512 chr.img /mnt
+# 创建挂载点
+mkdir -p /mnt/chr
+
+# 加载 loop 设备模块
+modprobe loop
+
+# 使用 kpartx 分区映射
+device=$(losetup -f --show chr.img)
+kpartx -avs $device
+
 if [ $? -ne 0 ]; then
-	echo "Mount failed!"
+  echo "Failed to map partitions with kpartx"
+  losetup -d $device
+  exit 1
+fi
+
+# 假设第一个分区是 loop0p1 或类似
+PARTITION="/dev/mapper/$(basename $device)p1"
+
+mount $PARTITION /mnt/chr
+if [ $? -ne 0 ]; then
+	echo "Mount failed on $PARTITION!"
+	losetup -d $device
 	exit 1
 fi
 
 echo "Writing to autorun.scr"
-#ros login password
-PASSWORD=""
-#ros ssh port
-SSHPORT=22
-#ros winlogon port
-WINBOXPORT=8291
-#ros dns server
-DNSSVR="1.1.1.1,1.0.0.1"
-#ros license account and password
-ROSACCOUNT=""
-ROSPASSWD=""
-cat > /mnt/rw/autorun.scr <<EOF
-#password
+
+# 修改以下参数
+PASSWORD="adminpass"         # 设置 admin 密码
+SSHPORT=22                   # SSH 端口
+WINBOXPORT=8291              # Winbox 端口
+DNSSVR="1.1.1.1,1.0.0.1"     # DNS 服务器
+ROSACCOUNT="youraccount"     # 许可证账户
+ROSPASSWD="licensepassword"  # 许可证密码
+
+cat > /mnt/chr/autorun.scr <<EOF
+# 设置用户名和密码
 /user set 0 name=admin password=$PASSWORD
-#config ip and route
+
+# 设置静态 IP 和路由
 /ip dhcp-client disable [find where interface=ether1]
 /ip address add address=$ADDRESS interface=[/interface ethernet find where name=ether1]
 /ip route add gateway=$GATEWAY
-#enhance security
+
+# 增强安全设置
 /ip service disable telnet,ftp,www,api,api-ssl
 /ip service set ssh port=$SSHPORT
 /ip service set winbox port=$WINBOXPORT
 /tool mac-server set allowed-interface-list=none
 /ip neighbor discovery-settings set discover-interface-list=none
-#config dns
+
+# 设置 DNS
 /ip dns set servers=$DNSSVR
-#renew license
+
+# 更新许可证（如果已有账号）
 /delay 3s
 /system license renew account=$ROSACCOUNT password=$ROSPASSWD level=p-unlimited
-#upgrade
+
+# 升级 ROS 固件
 /system package update set channel=upgrade
 /system package update check-for-updates once
 :delay 3s;
@@ -66,13 +91,13 @@ cat > /mnt/rw/autorun.scr <<EOF
 EOF
 
 sync && sleep 1s
-umount /mnt
-if [ $? -ne 0 ]; then
-	echo "Umount failed!"
-	exit 1
-fi
 
-#dd and reboot
+# 卸载并清理设备映射
+umount /mnt/chr || echo "Unmount failed"
+kpartx -dv $device
+losetup -d $device
+
+# 写入磁盘部分
 read -r -p "Partition is /dev/sda ? [Y/n]:" input
 case $input in
   [yY][eE][sS]|[yY])  ;;
@@ -82,8 +107,7 @@ esac
 echo "dd starting"
 sync && sleep 1s
 echo u > /proc/sysrq-trigger
-#fdisk -l | grep da check partition name
-dd if=chr.img bs=1M of=/dev/sda
+dd if=chr.img bs=1M of=/dev/sda conv=fdatasync
 sync && sleep 1s
 echo "rebooting" && sleep 1s
 echo b > /proc/sysrq-trigger
