@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  v2bx:
+    image: v2bx:latest
+    container_name: v2bx
+    network_mode: host
+    volumes:
+      - /root/V2bX:/etc/V2bX
+    restart: unless-stopped
+    # 如果需要前台运行，取消下面的注释（视具体镜像是否需要）
+    # command: ["your-command-here"]
