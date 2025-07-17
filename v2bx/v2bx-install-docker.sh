@@ -167,6 +167,9 @@ build_run_v2bx_docker() {
     unzip V2bX-linux.zip
     rm V2bX-linux.zip -f
     chmod +x V2bX
+    #下载singbox、hy2配置文件
+    wget https://raw.githubusercontent.com/lybil/test/refs/heads/main/v2bx/hy2config.yaml
+    wget https://raw.githubusercontent.com/lybil/test/refs/heads/main/v2bx/sing_origin.json
     #回到root目录
     cd /root
     # 创建 Dockerfile
