@@ -728,7 +728,7 @@ create_server_config() {
 Address = 10.7.0.1/24$([[ -n "$ip6" ]] && echo ", fddd:2c4:2c4:2c4::1/64")
 PrivateKey = $(wg genkey)
 ListenPort = $port
-
+MTU = 1380
 EOF
 	chmod 600 "$WG_CONF"
 }
@@ -935,6 +935,7 @@ new_client() {
 PublicKey = $(wg pubkey <<< "$key")
 PresharedKey = $psk
 AllowedIPs = 10.7.0.$octet/32$(grep -q 'fddd:2c4:2c4:2c4::1' "$WG_CONF" && echo ", fddd:2c4:2c4:2c4::$octet/128")
+PersistentKeepalive = 25
 # END_PEER $client
 EOF
 	# Create client configuration
