@@ -737,12 +737,12 @@ create_firewall_rules() {
 	if systemctl is-active --quiet firewalld.service; then
 		# Using both permanent and not permanent rules to avoid a firewalld reload
 		firewall-cmd -q --add-port="$port"/udp
-		firewall-cmd -q --zone=trusted --add-source=10.7.0.0/22
+		firewall-cmd -q --zone=trusted --add-source=10.7.0.0/20
 		firewall-cmd -q --permanent --add-port="$port"/udp
-		firewall-cmd -q --permanent --zone=trusted --add-source=10.7.0.0/22
+		firewall-cmd -q --permanent --zone=trusted --add-source=10.7.0.0/20
 		# Set NAT for the VPN subnet
-		firewall-cmd -q --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/22 ! -d 10.7.0.0/22 -j MASQUERADE
-		firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/22 ! -d 10.7.0.0/22 -j MASQUERADE
+		firewall-cmd -q --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/20 ! -d 10.7.0.0/20 -j MASQUERADE
+		firewall-cmd -q --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/20 ! -d 10.7.0.0/20 -j MASQUERADE
 		if [[ -n "$ip6" ]]; then
 			firewall-cmd -q --zone=trusted --add-source=fddd:2c4:2c4:2c4::/64
 			firewall-cmd -q --permanent --zone=trusted --add-source=fddd:2c4:2c4:2c4::/64
@@ -764,13 +764,13 @@ After=network-online.target
 Wants=network-online.target
 [Service]
 Type=oneshot
-ExecStart=$iptables_path -w 5 -t nat -A POSTROUTING -s 10.7.0.0/22 ! -d 10.7.0.0/22 -j MASQUERADE
+ExecStart=$iptables_path -w 5 -t nat -A POSTROUTING -s 10.7.0.0/20 ! -d 10.7.0.0/20 -j MASQUERADE
 ExecStart=$iptables_path -w 5 -I INPUT -p udp --dport $port -j ACCEPT
-ExecStart=$iptables_path -w 5 -I FORWARD -s 10.7.0.0/22 -j ACCEPT
+ExecStart=$iptables_path -w 5 -I FORWARD -s 10.7.0.0/20 -j ACCEPT
 ExecStart=$iptables_path -w 5 -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-ExecStop=$iptables_path -w 5 -t nat -D POSTROUTING -s 10.7.0.0/22 ! -d 10.7.0.0/22 -j MASQUERADE
+ExecStop=$iptables_path -w 5 -t nat -D POSTROUTING -s 10.7.0.0/20 ! -d 10.7.0.0/20 -j MASQUERADE
 ExecStop=$iptables_path -w 5 -D INPUT -p udp --dport $port -j ACCEPT
-ExecStop=$iptables_path -w 5 -D FORWARD -s 10.7.0.0/22 -j ACCEPT
+ExecStop=$iptables_path -w 5 -D FORWARD -s 10.7.0.0/20 -j ACCEPT
 ExecStop=$iptables_path -w 5 -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" > /etc/systemd/system/wg-iptables.service
 		if [[ -n "$ip6" ]]; then
 			echo "ExecStart=$ip6tables_path -w 5 -t nat -A POSTROUTING -s fddd:2c4:2c4:2c4::/64 ! -d fddd:2c4:2c4:2c4::/64 -j MASQUERADE
@@ -793,14 +793,14 @@ WantedBy=multi-user.target" >> /etc/systemd/system/wg-iptables.service
 remove_firewall_rules() {
 	port=$(grep '^ListenPort' "$WG_CONF" | cut -d " " -f 3)
 	if systemctl is-active --quiet firewalld.service; then
-		ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.7.0.0/22 '"'"'!'"'"' -d 10.7.0.0/22' | grep -oE '[^ ]+$')
+		ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.7.0.0/20 '"'"'!'"'"' -d 10.7.0.0/20' | grep -oE '[^ ]+$')
 		# Using both permanent and not permanent rules to avoid a firewalld reload.
 		firewall-cmd -q --remove-port="$port"/udp
-		firewall-cmd -q --zone=trusted --remove-source=10.7.0.0/22
+		firewall-cmd -q --zone=trusted --remove-source=10.7.0.0/20
 		firewall-cmd -q --permanent --remove-port="$port"/udp
-		firewall-cmd -q --permanent --zone=trusted --remove-source=10.7.0.0/22
-		firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/22 ! -d 10.7.0.0/22 -j MASQUERADE
-		firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/22 ! -d 10.7.0.0/22 -j MASQUERADE
+		firewall-cmd -q --permanent --zone=trusted --remove-source=10.7.0.0/20
+		firewall-cmd -q --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/20 ! -d 10.7.0.0/20 -j MASQUERADE
+		firewall-cmd -q --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.7.0.0/20 ! -d 10.7.0.0/20 -j MASQUERADE
 		if grep -qs 'fddd:2c4:2c4:2c4::1/64' "$WG_CONF"; then
 			ip6=$(firewall-cmd --direct --get-rules ipv6 nat POSTROUTING | grep '\-s fddd:2c4:2c4:2c4::/64 '"'"'!'"'"' -d fddd:2c4:2c4:2c4::/64' | grep -oE '[^ ]+$')
 			firewall-cmd -q --zone=trusted --remove-source=fddd:2c4:2c4:2c4::/64
