@@ -930,6 +930,23 @@ new_client() {
 	psk=$(wg genpsk)
 	# Configure client in the server
 	cat << EOF >> "$WG_CONF"
+
+# === PostUp: 添加防火墙规则 ===
+PostUp = iptables -w 5 -t nat -A POSTROUTING -s 10.7.11.0/24 ! -d 10.7.11.0/24 -j MASQUERADE
+PostUp = iptables -w 5 -t nat -A POSTROUTING -s 10.8.11.0/24 ! -d 10.8.11.0/24 -j MASQUERADE
+PostUp = iptables -w 5 -I INPUT -p udp --dport 51820 -j ACCEPT
+PostUp = iptables -w 5 -I FORWARD -s 10.7.11.0/24 -j ACCEPT
+PostUp = iptables -w 5 -I FORWARD -s 10.8.11.0/24 -j ACCEPT
+PostUp = iptables -w 5 -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# === PostDown: 清理防火墙规则 ===
+PostDown = iptables -w 5 -t nat -D POSTROUTING -s 10.7.11.0/24 ! -d 10.7.11.0/24 -j MASQUERADE 2>/dev/null || true
+PostDown = iptables -w 5 -t nat -D POSTROUTING -s 10.8.11.0/24 ! -d 10.8.11.0/24 -j MASQUERADE 2>/dev/null || true
+PostDown = iptables -w 5 -D INPUT -p udp --dport 51820 -j ACCEPT 2>/dev/null || true
+PostDown = iptables -w 5 -D FORWARD -s 10.7.11.0/24 -j ACCEPT 2>/dev/null || true
+PostDown = iptables -w 5 -D FORWARD -s 10.8.11.0/24 -j ACCEPT 2>/dev/null || true
+PostDown = iptables -w 5 -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT 2>/dev/null || true
+
 # BEGIN_PEER $client
 [Peer]
 PublicKey = $(wg pubkey <<< "$key")
@@ -1357,7 +1374,7 @@ if [[ ! -e "$WG_CONF" ]]; then
 	install_pkgs
 	create_server_config
 	# update_sysctl # 移除加速规则
-	create_firewall_rules
+	#create_firewall_rules
 	if [ "$os" != "openSUSE" ]; then
 		update_rclocal
 	fi
